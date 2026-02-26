@@ -1,0 +1,72 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Courier+Prime:wght@400;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Courier Prime", ui-monospace, SFMono-Regular, monospace;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #f4f0e6;
+  color: #111;
+  background-image: radial-gradient(#d1ccc0 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.brutal-border {
+  border: 3px solid #111;
+}
+
+.brutal-shadow {
+  box-shadow: 6px 6px 0px 0px #111;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.brutal-shadow-sm {
+  box-shadow: 3px 3px 0px 0px #111;
+}
+
+button.brutal-shadow:hover, a.brutal-shadow:hover {
+  transform: translate(2px, 2px);
+  box-shadow: 4px 4px 0px 0px #111;
+}
+
+button.brutal-shadow:active, a.brutal-shadow:active {
+  transform: translate(6px, 6px);
+  box-shadow: 0px 0px 0px 0px #111;
+}
+
+/* Custom Range Slider */
+input[type=range] {
+  -webkit-appearance: none;
+  width: 100%;
+  background: transparent;
+}
+
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 24px;
+  width: 24px;
+  border-radius: 0;
+  background: #FF007F;
+  border: 3px solid #111;
+  cursor: pointer;
+  margin-top: -8px;
+  box-shadow: 2px 2px 0px 0px #111;
+}
+
+input[type=range]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 12px;
+  cursor: pointer;
+  background: #fff;
+  border: 3px solid #111;
+}
+
+input[type=range]:focus {
+  outline: none;
+}
