@@ -5,9 +5,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'motion/react';
-import { Server, Cpu, HardDrive, Zap, XSquare, Globe, CheckCircle, Download, Trash2, LogOut, ShieldCheck, Clock } from 'lucide-react';
-// @ts-ignore
-import html2pdf from 'html2pdf.js';
+import { Server, Cpu, HardDrive, Zap, XSquare, Globe, CheckCircle, Download, Trash2, LogOut, ShieldCheck, Clock, Mail } from 'lucide-react';
 
 const RAM_OPTIONS = [
   { value: 0.5, label: '512 MB', price: 15000 },
@@ -44,6 +42,7 @@ export default function App() {
   const [adminCreds, setAdminCreds] = useState({ username: '', password: '' });
   const [confirmData, setConfirmData] = useState({ id: '', ipv6: '', ipv4_addr: '' });
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   const receiptRef = useRef<HTMLDivElement>(null);
   const postPaymentRef = useRef<HTMLDivElement>(null);
@@ -130,17 +129,26 @@ export default function App() {
     }
   };
 
-  const downloadPDF = (ref: React.RefObject<HTMLDivElement>, filename: string) => {
-    if (!ref.current) return;
-    const element = ref.current;
-    const opt = {
-      margin: 10,
-      filename: `${filename}.pdf`,
-      image: { type: 'jpeg' as const, quality: 0.98 },
-      html2canvas: { scale: 2 },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
-    };
-    html2pdf().set(opt).from(element).save();
+  const sendEmail = async (id: string) => {
+    setIsSendingEmail(true);
+    try {
+      const res = await fetch(`/api/orders/${id}/email`, { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        if (data.simulated) {
+          alert('Simulasi: Email berhasil "dikirim".\n\n(Catatan untuk Admin: Anda belum mengatur SMTP_USER dan SMTP_PASS di file .env server Anda)');
+        } else {
+          alert('Email berhasil dikirim ke ' + currentOrder.email);
+        }
+      } else {
+        alert('Gagal mengirim email: ' + data.error);
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Terjadi kesalahan koneksi saat mengirim email.');
+    } finally {
+      setIsSendingEmail(false);
+    }
   };
 
   const handleAdminLogin = async (e: React.FormEvent) => {
@@ -571,10 +579,11 @@ export default function App() {
 
               <div className="flex gap-4">
                 <button 
-                  onClick={() => downloadPDF(receiptRef, `Struk-Rffnet-${currentOrder.id}`)}
-                  className="flex-1 bg-[#00FFFF] text-black font-bold uppercase py-3 brutal-border brutal-shadow flex items-center justify-center gap-2"
+                  onClick={() => sendEmail(currentOrder.id)}
+                  disabled={isSendingEmail}
+                  className="flex-1 bg-[#00FFFF] text-black font-bold uppercase py-3 brutal-border brutal-shadow flex items-center justify-center gap-2 disabled:opacity-50"
                 >
-                  <Download size={18} /> Download Struk
+                  <Mail size={18} /> {isSendingEmail ? 'Mengirim...' : 'Kirim ke Email'}
                 </button>
                 <button 
                   onClick={() => setView('STATUS')}
@@ -640,10 +649,11 @@ export default function App() {
                   </div>
 
                   <button 
-                    onClick={() => downloadPDF(postPaymentRef, `VPS-Info-Rffnet-${currentOrder.id}`)}
-                    className="w-full bg-[#FF007F] text-white font-bold uppercase py-4 brutal-border brutal-shadow flex items-center justify-center gap-2 text-xl"
+                    onClick={() => sendEmail(currentOrder.id)}
+                    disabled={isSendingEmail}
+                    className="w-full bg-[#FF007F] text-white font-bold uppercase py-4 brutal-border brutal-shadow flex items-center justify-center gap-2 text-xl disabled:opacity-50"
                   >
-                    <Download /> Download Info VPS (PDF)
+                    <Mail /> {isSendingEmail ? 'Mengirim...' : 'Kirim Info VPS ke Email'}
                   </button>
                 </div>
               )}

@@ -4,6 +4,10 @@ import Database from "better-sqlite3";
 import cookieParser from "cookie-parser";
 import path from "path";
 import { fileURLToPath } from "url";
+import nodemailer from "nodemailer";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const db = new Database("rffnet.db");
@@ -70,6 +74,87 @@ async function startServer() {
     }
   });
 
+  app.post("/api/orders/:id/email", async (req, res) => {
+    const order: any = db.prepare("SELECT * FROM orders WHERE id = ?").get(req.params.id);
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    try {
+      if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+        console.warn("SMTP credentials not configured. Simulating email send.");
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        return res.json({ success: true, simulated: true });
+      }
+
+      const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST || "smtp.gmail.com",
+        port: parseInt(process.env.SMTP_PORT || "587"),
+        secure: process.env.SMTP_SECURE === "true",
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS,
+        },
+      });
+
+      const isConfirmed = order.status === 'CONFIRMED';
+      const subject = isConfirmed ? `Informasi Login VPS Rffnet - #${order.id}` : `Struk Pembelian VPS Rffnet - #${order.id}`;
+      
+      let htmlContent = '';
+      if (isConfirmed) {
+        htmlContent = `
+          <div style="font-family: monospace; max-width: 600px; margin: 0 auto; border: 2px solid #000; padding: 20px;">
+            <h2 style="text-align: center; color: green;">VPS AKTIF!</h2>
+            <p><strong>ID Pesanan:</strong> ${order.id}</p>
+            <h3>Spesifikasi</h3>
+            <p>RAM: ${order.ram_label} | CPU: ${order.cpu_cores} Core</p>
+            <p>Network: ${order.has_ipv4 ? 'IPv6 + IPv4' : 'IPv6 Only'}</p>
+            ${order.domain ? `<p>Domain: ${order.domain}.my.id</p>` : ''}
+            <hr/>
+            <h3>Akses Login</h3>
+            <p><strong>IP IPv6:</strong> ${order.ipv6}</p>
+            ${order.ipv4_addr ? `<p><strong>IP IPv4:</strong> ${order.ipv4_addr}</p>` : ''}
+            <p><strong>Username:</strong> ${order.username}</p>
+            <p><strong>Password:</strong> ${order.password}</p>
+            <hr/>
+            <p style="text-align: center; font-size: 12px; color: #666;">Berlaku hingga: ${new Date(new Date(order.created_at).getTime() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('id-ID')}</p>
+          </div>
+        `;
+      } else {
+        htmlContent = `
+          <div style="font-family: monospace; max-width: 600px; margin: 0 auto; border: 2px solid #000; padding: 20px;">
+            <h2 style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px;">RFFNET VPS - STRUK #${order.id}</h2>
+            <p><strong>Nama:</strong> ${order.name}</p>
+            <p><strong>Email:</strong> ${order.email}</p>
+            <hr style="border: 1px dashed #ccc;" />
+            <p><strong>RAM ${order.ram_label}:</strong> Rp ${order.ram_price.toLocaleString('id-ID')}</p>
+            <p><strong>CPU ${order.cpu_cores} Core:</strong> Rp ${order.cpu_price.toLocaleString('id-ID')}</p>
+            ${order.has_ipv4 ? `<p><strong>IPv4 Topping:</strong> Rp 80.000</p>` : ''}
+            <hr style="border: 2px solid #000;" />
+            <h3><strong>TOTAL: Rp ${order.total_price.toLocaleString('id-ID')}</strong></h3>
+            <div style="background-color: #FFE600; padding: 15px; border: 2px solid #000; margin-top: 20px; text-align: center;">
+              <p><strong>Tata Cara Pembayaran</strong></p>
+              <p>Transfer GoPay ke Admin: <strong>Raffa F (083848222110)</strong></p>
+              <p>Kirim screenshot bukti pembayaran ke WhatsApp tersebut.</p>
+            </div>
+          </div>
+        `;
+      }
+
+      await transporter.sendMail({
+        from: `"Rffnet VPS" <${process.env.SMTP_USER}>`,
+        to: order.email,
+        subject: subject,
+        html: htmlContent
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Email error:", error);
+      res.status(500).json({ error: "Failed to send email" });
+    }
+  });
+
   // Admin Routes
   app.post("/api/admin/login", (req, res) => {
     const { username, password } = req.body;
@@ -133,7 +218,7 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
+  app.listen(PORT, "::0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
   });
 }
