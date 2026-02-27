@@ -18,6 +18,8 @@ const RAM_OPTIONS = [
   { value: 16, label: '16 GB', price: 217000 },
 ];
 
+const OS_OPTIONS = ['Debian 12', 'Ubuntu 24.04 LTS', 'Arch Linux'];
+
 type View = 'HOME' | 'CHECKOUT' | 'RECEIPT' | 'STATUS' | 'ADMIN_LOGIN' | 'ADMIN_DASHBOARD';
 
 export default function App() {
@@ -32,7 +34,8 @@ export default function App() {
     email: '',
     username: '',
     password: '',
-    domain: ''
+    domain: '',
+    os: 'Ubuntu 24.04 LTS'
   });
   
   const [orderId, setOrderId] = useState<string | null>(null);
@@ -331,7 +334,34 @@ export default function App() {
                       </div>
                     </div>
 
-                    {/* IPv4 Topping */}
+                    {/* OS Selection */}
+                  <div className="bg-white p-4 brutal-border space-y-4">
+                    <div className="flex items-center gap-2 font-bold uppercase">
+                      <ShieldCheck size={20} className="text-[#FF007F]" />
+                      <span>Operating System</span>
+                    </div>
+                    <div className="grid grid-cols-1 gap-2">
+                      {OS_OPTIONS.map(os => (
+                        <button
+                          key={os}
+                          type="button"
+                          onClick={() => setFormData({ ...formData, os })}
+                          className={`p-3 brutal-border font-bold text-left transition-all ${
+                            formData.os === os 
+                              ? 'bg-[#FFE600] brutal-shadow-sm translate-x-[-2px] translate-y-[-2px]' 
+                              : 'bg-white hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span>{os}</span>
+                            {formData.os === os && <CheckCircle size={16} />}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* IPv4 Topping */}
                     <div className="bg-white p-4 brutal-border">
                       <label className="flex items-center justify-between cursor-pointer">
                         <div className="flex items-center gap-2">
@@ -359,6 +389,10 @@ export default function App() {
                       Order Summary
                     </h3>
                     <ul className="space-y-4 font-mono text-lg">
+                      <li className="flex justify-between border-b-2 border-dashed border-gray-400 pb-2">
+                        <span>OS</span>
+                        <span className="font-bold">{formData.os}</span>
+                      </li>
                       <li className="flex justify-between border-b-2 border-dashed border-gray-400 pb-2">
                         <span>RAM ({selectedRam.label})</span>
                         <span className="font-bold">Rp {selectedRam.price.toLocaleString('id-ID')}</span>
@@ -543,6 +577,10 @@ export default function App() {
                     <span>Email:</span>
                     <span className="font-bold">{currentOrder.email}</span>
                   </div>
+                  <div className="flex justify-between">
+                    <span>OS:</span>
+                    <span className="font-bold">{currentOrder.os}</span>
+                  </div>
                   <div className="border-t-2 border-dashed border-gray-300 pt-4">
                     <div className="flex justify-between">
                       <span>RAM {currentOrder.ram_label}:</span>
@@ -624,6 +662,7 @@ export default function App() {
                     <div className="grid md:grid-cols-2 gap-8">
                       <div className="space-y-4">
                         <h4 className="font-bold border-b-2 border-black pb-1 uppercase">Spesifikasi</h4>
+                        <p>OS: {currentOrder.os}</p>
                         <p>RAM: {currentOrder.ram_label}</p>
                         <p>CPU: {currentOrder.cpu_cores} Core</p>
                         <p>Network: {currentOrder.has_ipv4 ? 'IPv6 + IPv4' : 'IPv6 Only'}</p>
@@ -716,6 +755,7 @@ export default function App() {
                     </div>
                     <div className="space-y-1">
                       <p className="font-bold text-sm uppercase">VPS Specs</p>
+                      <p className="font-mono text-xs">OS: {order.os}</p>
                       <p className="font-mono text-xs">{order.ram_label} / {order.cpu_cores} Core</p>
                       <p className="font-mono text-xs">{order.has_ipv4 ? 'IPv4 Enabled' : 'IPv6 Only'}</p>
                       {order.domain && <p className="font-mono text-xs text-blue-600">Domain: {order.domain}.my.id</p>}

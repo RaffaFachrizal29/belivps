@@ -42,6 +42,11 @@ if (!hasDomain) {
   db.exec("ALTER TABLE orders ADD COLUMN domain TEXT");
 }
 
+const hasOS = tableInfo.some((col: any) => col.name === "os");
+if (!hasOS) {
+  db.exec("ALTER TABLE orders ADD COLUMN os TEXT");
+}
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
@@ -51,13 +56,13 @@ async function startServer() {
 
   // API Routes
   app.post("/api/orders", (req, res) => {
-    const { id, name, phone, email, username, password, domain, ram_label, ram_price, cpu_cores, cpu_price, has_ipv4, ipv4_price, total_price } = req.body;
+    const { id, name, phone, email, username, password, domain, os, ram_label, ram_price, cpu_cores, cpu_price, has_ipv4, ipv4_price, total_price } = req.body;
     try {
       const stmt = db.prepare(`
-        INSERT INTO orders (id, name, phone, email, username, password, domain, ram_label, ram_price, cpu_cores, cpu_price, has_ipv4, ipv4_price, total_price)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO orders (id, name, phone, email, username, password, domain, os, ram_label, ram_price, cpu_cores, cpu_price, has_ipv4, ipv4_price, total_price)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
-      stmt.run(id, name, phone, email, username, password, domain || null, ram_label, ram_price, cpu_cores, cpu_price, has_ipv4 ? 1 : 0, ipv4_price, total_price);
+      stmt.run(id, name, phone, email, username, password, domain || null, os || 'Ubuntu Server', ram_label, ram_price, cpu_cores, cpu_price, has_ipv4 ? 1 : 0, ipv4_price, total_price);
       res.json({ success: true });
     } catch (error) {
       console.error(error);
@@ -107,6 +112,7 @@ async function startServer() {
             <h2 style="text-align: center; color: green;">VPS AKTIF!</h2>
             <p><strong>ID Pesanan:</strong> ${order.id}</p>
             <h3>Spesifikasi</h3>
+            <p>OS: ${order.os || 'Ubuntu Server'}</p>
             <p>RAM: ${order.ram_label} | CPU: ${order.cpu_cores} Core</p>
             <p>Network: ${order.has_ipv4 ? 'IPv6 + IPv4' : 'IPv6 Only'}</p>
             ${order.domain ? `<p>Domain: ${order.domain}.my.id</p>` : ''}
@@ -126,6 +132,7 @@ async function startServer() {
             <h2 style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px;">RFFNET VPS - STRUK #${order.id}</h2>
             <p><strong>Nama:</strong> ${order.name}</p>
             <p><strong>Email:</strong> ${order.email}</p>
+            <p><strong>OS:</strong> ${order.os || 'Ubuntu Server'}</p>
             <hr style="border: 1px dashed #ccc;" />
             <p><strong>RAM ${order.ram_label}:</strong> Rp ${order.ram_price.toLocaleString('id-ID')}</p>
             <p><strong>CPU ${order.cpu_cores} Core:</strong> Rp ${order.cpu_price.toLocaleString('id-ID')}</p>
